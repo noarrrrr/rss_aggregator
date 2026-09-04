@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-const configFileName string = ".rssconfig.json"
+const configFileName string = ".gatorconfig.json"
 
 var home, _ = os.UserHomeDir()
 

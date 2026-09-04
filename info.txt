@@ -1,0 +1,5 @@
+Server Connect: 
+psql "postgres://postgres:gamer@localhost:5432/rss"
+
+Server Migrate:
+goose postgres "postgres://postgres:gamer@localhost:5432/rss" up
