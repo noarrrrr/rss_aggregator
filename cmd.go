@@ -75,3 +75,24 @@ func HandlerRegister(s *state, cmd command) error {
 	fmt.Printf("User '%v' has been created and logged in\n", user.Name)
 	return nil
 }
+
+func HandlerReset(s *state, cmd command) error {
+	bg := context.Background()
+	err := s.db.Reset(bg)
+	handle(err)
+	return nil
+}
+
+func HandlerUsers(s *state, cmd command) error {
+	bg := context.Background()
+	users, err := s.db.GetUsers(bg)
+	handle(err)
+	for _, user := range users {
+		if user == s.cfg.Current_username {
+			fmt.Printf("* %v (current)\n", user)
+		} else {
+			fmt.Println("* " + user)
+		}
+	}
+	return nil
+}
