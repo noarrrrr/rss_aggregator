@@ -104,3 +104,27 @@ func HandleAggregate(s *state, cmd command) error {
 	fmt.Println(feed)
 	return nil
 }
+
+func HandleAddFeed(s *state, cmd command) error {
+	if len(cmd.args) != 2 {
+		return errors.New("Please provide the name (one word) and the url")
+	}
+	bg := context.Background()
+	user, err := s.db.GetUser(bg, s.cfg.Current_username)
+	handle(err)
+	userID := user.ID
+	name := cmd.args[0]
+	url := cmd.args[1]
+	params := database.AddFeedParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Name:      name,
+		Url:       url,
+		UserID:    userID,
+	}
+	feed, err := s.db.AddFeed(bg, params)
+	handle(err)
+	fmt.Println(feed)
+	return nil
+}
