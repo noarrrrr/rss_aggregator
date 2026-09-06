@@ -96,3 +96,11 @@ func HandlerUsers(s *state, cmd command) error {
 	}
 	return nil
 }
+
+func HandleAggregate(s *state, cmd command) error {
+	bg := context.Background()
+	feed, err := fetchFeed(bg, "https://www.wagslane.dev/index.xml")
+	handle(err)
+	fmt.Println(feed)
+	return nil
+}
