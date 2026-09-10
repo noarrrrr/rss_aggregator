@@ -9,3 +9,10 @@ VALUES (
     $6
 )
 RETURNING *;
+
+-- name: ListFeeds :many
+SELECT * FROM feeds;
+
+-- name: GetFeedByURL :one
+SELECT * FROM feeds 
+WHERE url = $1; 

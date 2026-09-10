@@ -126,5 +126,75 @@ func HandleAddFeed(s *state, cmd command) error {
 	feed, err := s.db.AddFeed(bg, params)
 	handle(err)
 	fmt.Println(feed)
+	follow_cmd := command{
+		name: "temp",
+		args: cmd.args[1:],
+	}
+	HandleFollow(s, follow_cmd)
+	return nil
+}
+
+func HandleFeeds(s *state, cmd command) error {
+	if len(cmd.args) > 0 {
+		return errors.New("This command takes no arguments")
+	}
+	bg := context.Background()
+	feeds, err := s.db.ListFeeds(bg)
+	handle(err)
+	for i, feed := range feeds {
+		username, err := s.db.GetNameByID(bg, feed.UserID)
+		handle(err)
+		fmt.Printf("\nFeed #%d: %v\nURL: %v\nFeed Creater: %v\n\n", i+1, feed.Name, feed.Url, username)
+	}
+	return nil
+}
+
+func HandleFollow(s *state, cmd command) error {
+	if len(cmd.args) != 1 {
+		return errors.New("Please provide a url to follow")
+	}
+
+	bg := context.Background()
+
+	user, err := s.db.GetUser(bg, s.cfg.Current_username)
+	handle(err)
+	user_id := user.ID
+
+	feed, err := s.db.GetFeedByURL(bg, cmd.args[0])
+	handle(err)
+	feed_id := feed.ID
+
+	params := database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID:    user_id,
+		FeedID:    feed_id,
+	}
+
+	follow_info, err := s.db.CreateFeedFollow(bg, params)
+	handle(err)
+
+	fmt.Printf("You (%v) have started following %v\n", follow_info.UserName, follow_info.FeedName)
+	return nil
+}
+
+func HandleFollowing(s *state, cmd command) error {
+	if len(cmd.args) != 0 {
+		return errors.New("This command takes no arguments")
+	}
+
+	bg := context.Background()
+
+	user := s.cfg.Current_username
+
+	followed_feeds, err := s.db.GetFeedFollowsForUser(bg, user)
+	handle(err)
+
+	fmt.Printf("Feeds that you (%v) are following:\n", user)
+
+	for _, feed := range followed_feeds {
+		fmt.Println(feed)
+	}
 	return nil
 }
