@@ -18,10 +18,17 @@ FROM inserted_feed_follow
 INNER JOIN feeds ON inserted_feed_follow.feed_id = feeds.id
 INNER JOIN users ON inserted_feed_follow.user_id = users.id;
 
+-- name: DeleteFeedFollow :exec
+DELETE FROM feed_follows
+WHERE user_id = $1 and feed_id = $2;
+
 -- name: GetFeedFollowsForUser :many
 SELECT
     feeds.name AS feed_name
 FROM feed_follows
-INNER JOIN feeds ON feed_follows.feed_id = feeds.id
 INNER JOIN users ON feed_follows.user_id = users.id
+INNER JOIN feeds ON feed_follows.feed_id = feeds.id
 WHERE users.name = $1;
+
+-- name: DebugFollows :many
+SELECT * FROM feed_follows;

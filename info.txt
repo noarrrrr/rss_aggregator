@@ -3,3 +3,10 @@ psql "postgres://postgres:gamer@localhost:5432/rss"
 
 Server Migrate:
 goose postgres "postgres://postgres:gamer@localhost:5432/rss" up
+
+
+Config File Backup:
+
+.gatorconfig.json
+
+{"db_url":"postgres://postgres:gamer@localhost:5432/rss?sslmode=disable","current_username":"kahya"}

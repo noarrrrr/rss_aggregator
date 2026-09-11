@@ -39,13 +39,8 @@ func handlerLogin(s *state, cmd command) error {
 		return errors.New("Please provide one username")
 	}
 
-	bg := context.Background()
-
-	user, err := s.db.GetUser(bg, cmd.args[0])
-	handle(err)
-
-	s.cfg.Current_username = user.Name
-	err = s.cfg.SetUser()
+	s.cfg.Current_username = cmd.args[0]
+	err := s.cfg.SetUser()
 	if err != nil {
 		return err
 	}
@@ -105,13 +100,11 @@ func HandleAggregate(s *state, cmd command) error {
 	return nil
 }
 
-func HandleAddFeed(s *state, cmd command) error {
+func HandleAddFeed(s *state, cmd command, user database.User) error {
 	if len(cmd.args) != 2 {
 		return errors.New("Please provide the name (one word) and the url")
 	}
 	bg := context.Background()
-	user, err := s.db.GetUser(bg, s.cfg.Current_username)
-	handle(err)
 	userID := user.ID
 	name := cmd.args[0]
 	url := cmd.args[1]
@@ -130,7 +123,7 @@ func HandleAddFeed(s *state, cmd command) error {
 		name: "temp",
 		args: cmd.args[1:],
 	}
-	HandleFollow(s, follow_cmd)
+	HandleFollow(s, follow_cmd, user)
 	return nil
 }
 
@@ -149,15 +142,13 @@ func HandleFeeds(s *state, cmd command) error {
 	return nil
 }
 
-func HandleFollow(s *state, cmd command) error {
+func HandleFollow(s *state, cmd command, user database.User) error {
 	if len(cmd.args) != 1 {
 		return errors.New("Please provide a url to follow")
 	}
 
 	bg := context.Background()
 
-	user, err := s.db.GetUser(bg, s.cfg.Current_username)
-	handle(err)
 	user_id := user.ID
 
 	feed, err := s.db.GetFeedByURL(bg, cmd.args[0])
@@ -179,22 +170,46 @@ func HandleFollow(s *state, cmd command) error {
 	return nil
 }
 
-func HandleFollowing(s *state, cmd command) error {
+func HandleFollowing(s *state, cmd command, user database.User) error {
 	if len(cmd.args) != 0 {
 		return errors.New("This command takes no arguments")
 	}
 
 	bg := context.Background()
 
-	user := s.cfg.Current_username
-
-	followed_feeds, err := s.db.GetFeedFollowsForUser(bg, user)
+	followed_feeds, err := s.db.GetFeedFollowsForUser(bg, user.Name)
 	handle(err)
 
-	fmt.Printf("Feeds that you (%v) are following:\n", user)
+	fmt.Printf("Feeds that you (%v) are following:\n", user.Name)
 
 	for _, feed := range followed_feeds {
 		fmt.Println(feed)
 	}
+
 	return nil
+}
+
+func HandleUnfollow(s *state, cmd command, user database.User) error {
+	if len(cmd.args) != 1 {
+		return errors.New("Please provide one feed to unfollow")
+	}
+	bg := context.Background()
+	feed, err := s.db.GetFeedByURL(bg, cmd.args[0])
+	handle(err)
+	feed_id := feed.ID
+	err = s.db.DeleteFeedFollow(bg, database.DeleteFeedFollowParams{
+		UserID: user.ID,
+		FeedID: feed_id,
+	})
+	return nil
+}
+
+func middlewareLoggedIn(handler func(s *state, cmd command, user database.User) error) func(*state, command) error {
+	return func(s *state, cmd command) error {
+		bg := context.Background()
+		user, err := s.db.GetUser(bg, s.cfg.Current_username)
+		handle(err)
+		handler(s, cmd, user)
+		return nil
+	}
 }
