@@ -16,3 +16,11 @@ SELECT * FROM feeds;
 -- name: GetFeedByURL :one
 SELECT * FROM feeds 
 WHERE url = $1;
+
+-- name: MarkFeedFetched :exec
+UPDATE feeds 
+SET last_fetched_at = $1
+WHERE id = $2;
+
+-- name: NextFeedToFetch :one
+SELECT * FROM feeds ORDER BY last_fetched_at NULLS FIRST;

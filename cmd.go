@@ -93,11 +93,20 @@ func HandlerUsers(s *state, cmd command) error {
 }
 
 func HandleAggregate(s *state, cmd command) error {
-	bg := context.Background()
-	feed, err := fetchFeed(bg, "https://www.wagslane.dev/index.xml")
+	if len(cmd.args) != 1 {
+		return errors.New("Please provide the interval of time between aggregations(1s, 1m, 1h)")
+	}
+	dur, err := time.ParseDuration(cmd.args[0])
 	handle(err)
-	fmt.Println(feed)
-	return nil
+
+	fmt.Printf("Collacting feeds every %v\n", dur)
+
+	ticker := time.NewTicker(dur)
+	for ; ; <-ticker.C {
+		fmt.Println("Collecting feed now")
+		scrapeFeeds(s, command{})
+	}
+
 }
 
 func HandleAddFeed(s *state, cmd command, user database.User) error {
@@ -116,9 +125,8 @@ func HandleAddFeed(s *state, cmd command, user database.User) error {
 		Url:       url,
 		UserID:    userID,
 	}
-	feed, err := s.db.AddFeed(bg, params)
+	_, err := s.db.AddFeed(bg, params)
 	handle(err)
-	fmt.Println(feed)
 	follow_cmd := command{
 		name: "temp",
 		args: cmd.args[1:],

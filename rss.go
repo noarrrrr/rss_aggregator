@@ -2,11 +2,16 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"html"
 	"io"
 	"net/http"
+	"time"
+
+	"github.com/noarrrrr/rss_aggregator/internal/database"
 )
 
 type RSSFeed struct {
@@ -46,4 +51,32 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	}
 
 	return &feed, nil
+}
+
+func scrapeFeeds(s *state, cmd command) error {
+	if len(cmd.args) != 0 {
+		return errors.New("This command takes no arguments")
+	}
+	bg := context.Background()
+
+	feed, err := s.db.NextFeedToFetch(bg)
+	handle(err)
+
+	fetchTime := sql.NullTime{
+		Time:  time.Now(),
+		Valid: true,
+	}
+	params := database.MarkFeedFetchedParams{
+		LastFetchedAt: fetchTime,
+		ID:            feed.ID,
+	}
+	s.db.MarkFeedFetched(bg, params)
+
+	rss, err := fetchFeed(bg, feed.Url)
+	handle(err)
+
+	for _, item := range rss.Channel.Item {
+		fmt.Println(item.Title)
+	}
+	return nil
 }

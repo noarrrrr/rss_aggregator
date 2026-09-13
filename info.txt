@@ -1,4 +1,5 @@
 Server Connect: 
+sudo service postgresql start
 psql "postgres://postgres:gamer@localhost:5432/rss"
 
 Server Migrate:
