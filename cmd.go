@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -209,6 +210,31 @@ func HandleUnfollow(s *state, cmd command, user database.User) error {
 		UserID: user.ID,
 		FeedID: feed_id,
 	})
+	return nil
+}
+
+func HandleBrowse(s *state, cmd command, user database.User) error {
+	if len(cmd.args) > 1 {
+		return errors.New("This command takes one optional limit parameter as an integer")
+	}
+	var limit int32 = 2
+	if len(cmd.args) == 1 {
+		inty, err := strconv.Atoi(cmd.args[0])
+		limit = int32(inty)
+		handle(err)
+	}
+	bg := context.Background()
+
+	params := database.GetPostsForUserParams{
+		ID:    user.ID,
+		Limit: limit,
+	}
+	posts, err := s.db.GetPostsForUser(bg, params)
+	handle(err)
+
+	for _, post := range posts {
+		fmt.Println(post)
+	}
 	return nil
 }
 

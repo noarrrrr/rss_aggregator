@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/noarrrrr/rss_aggregator/internal/database"
 )
 
@@ -75,8 +76,35 @@ func scrapeFeeds(s *state, cmd command) error {
 	rss, err := fetchFeed(bg, feed.Url)
 	handle(err)
 
-	for _, item := range rss.Channel.Item {
-		fmt.Println(item.Title)
+	for _, post := range rss.Channel.Item {
+		pubDate, err := time.Parse(time.RFC1123, post.PubDate)
+		var pub sql.NullTime
+		if err != nil {
+			fmt.Println(err)
+			pub = sql.NullTime{
+				Time:  time.Now(),
+				Valid: false,
+			}
+		} else {
+			pub = sql.NullTime{
+				Time:  pubDate,
+				Valid: true,
+			}
+		}
+		postParams := database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Title:       post.Title,
+			Url:         post.Link,
+			Description: post.Description,
+			PublishedAt: pub,
+			FeedID:      feed.ID,
+		}
+		_, err = s.db.CreatePost(bg, postParams)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 	return nil
 }
